@@ -5,7 +5,7 @@ This is a ROS2 metapackage including:
  * A ROS2 package **oculus_ros2** interfacing the driver messages with ROS2 topics,
 
 This ROS2 metapackage was developed and tested using:<br>
-* Ubuntu 24.04 LTS<br>
+* Ubuntu 22.04 LTS<br>
 * ROS2 humble
 * MT3000d Sonar
 ### Dependencies
