@@ -10,7 +10,7 @@ endif()
 if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
-        GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
+        GIT_REPOSITORY https://github.com/chaos-whoi/oculus_driver.git
         GIT_TAG master # tag for development : TODO(hugoyvrn ?) handle the good version
     )
     FetchContent_MakeAvailable(oculus_driver)

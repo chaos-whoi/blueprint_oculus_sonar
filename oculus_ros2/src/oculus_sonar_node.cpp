@@ -101,11 +101,12 @@ OculusSonarNode::OculusSonarNode()
     }
   }
 
-  // Get the current sonar config
-  updateLocalParameters(currentSonarParameters_, this->sonar_driver_->current_ping_config());
-  for (const std::string& param_name : dynamic_parameters_names_) {
-    setConfigCallback(this->get_parameters(std::vector{param_name}));
-  }
+  // Get current sonar config and initialize local ROS cache without sending
+  // repeated startup config requests to the sonar.
+  currentConfig_ = this->sonar_driver_->current_ping_config();
+  updateLocalParameters(currentSonarParameters_, currentConfig_);
+  updateLocalParameters(currentRosParameters_, this->get_parameters(dynamic_parameters_names_));
+
   this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::setConfigCallback, this,
       std::placeholders::_1));  // TODO(hugoyvrn, to move before parameters initialisation ?)
 
@@ -122,9 +123,10 @@ void OculusSonarNode::setMinimalFlags(uint8_t& flags) const {
          | flagByte::SEND_GAINS  // force send gain to true this
          | flagByte::SIMPLE_PING;  // use simple ping
 
-  if (currentSonarParameters_.frequency_mode == params::FREQUENCY_MODE.max) {
-    // TODO(hugoyvrn, gain_assist not working, to fix)
-    // flags |= flagByte::GAIN_ASSIST;
+  // Respect runtime gain_assist parameter. Keep disabled when requested.
+  if (currentRosParameters_.gain_assist) {
+    flags |= flagByte::GAIN_ASSIST;
+  } else {
     flags &= ~flagByte::GAIN_ASSIST;
   }
 
@@ -144,11 +146,13 @@ void OculusSonarNode::checkMinimalFlags(const uint8_t& flags) const {
   if (!(flags & flagByte::RANGE_AS_METERS)) {
     RCLCPP_ERROR(get_logger(), "Range is attepreted as percent while ros driver assume range is interpreted as meters.");
   }
-  if (!(flags & flagByte::SEND_GAINS)) {
-    RCLCPP_ERROR(get_logger(), "The sonar don't send gain while ros driver assume gains are sended. Data is incomplete.");
-  }
   if (!(flags & flagByte::SIMPLE_PING)) {
     RCLCPP_ERROR(get_logger(), "The sonar don't use simple ping message while ros driver assume simple ping are used.");
+  }
+  if (!(flags & flagByte::SEND_GAINS)) {
+    RCLCPP_WARN(
+        get_logger(),
+        "The sonar does not send gain data. Continuing without gains (intensity visualization may differ).");
   }
 }
 

@@ -1,13 +1,13 @@
 /oculus_sonar:
   ros__parameters:
-    frame_id: "alpha_rise/fls" # Frame of reference for the ping messages. Default value is "sonar".
-    odom_msg_parent_frame_id: "alpha_rise/world" # Frame of reference for Odom frame
+    frame_id: "sonar" # Frame of reference for the ping messages. Default value is "sonar".
+    odom_msg_parent_frame_id: "world" # Frame of reference for Odom frame
     
-    frequency_mode: 2 # Sonar beam frequency mode. Default value is 2.
+    frequency_mode: 1 # Sonar beam frequency mode. Default value is 2.
     # 1: Low frequency (1.2MHz, wide aperture).
-    # 2: High frequency (2.1MHz, narrow aperture).
+    # 2: High frequency (3.0MHz, narrow aperture).
 
-    ping_rate: 2 # Frequency of ping fires. Default value is 2.
+    ping_rate: 0 # Frequency of ping fires. Default value is 2.
     # 0: 10Hz max ping rate.
     # 1: 15Hz max ping rate.
     # 2: 40Hz max ping rate.
@@ -19,9 +19,9 @@
     #  0: Oculus outputs 256 beams.
     #  1: Oculus outputs 512 beams.
 
-    gain_assist: True # Enable gain assist. Default value is True.
+    gain_assist: False # Enable gain assist. Default value is True.
 
-    range: 40.0 # Sonar range (in meters), min=0.3, max=40.0.  Default value is 20.0.
+    range: 3.0 # Sonar range (in meters), min=0.3, max=40.0.  Default value is 20.0.
 
     # These parameters are for scaling data (investigate)
     gamma_correction: 153 # Gamma correction, min=0, max=255.  Default value is 153 (60%).
@@ -32,6 +32,6 @@
     salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100. Default value is 0.0.
 
     # Fluid Density (kg/m^3); fresh: 997.0474; seawater: 1023.6
-    fluid_density: 1023.6
+    fluid_density: 997.0474
     # covariance value for depth measurement from pressure sensor
     z_covariance: 0.2
