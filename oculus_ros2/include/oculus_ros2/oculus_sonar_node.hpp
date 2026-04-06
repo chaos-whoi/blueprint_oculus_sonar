@@ -55,16 +55,16 @@
 #include <nav_msgs/msg/odometry.hpp>
 
 struct SonarParameters {
-  int frequency_mode;
-  int ping_rate;
-  int nbeams;
-  bool gain_assist;
-  double range;
-  int gamma_correction;
-  double gain_percent;
-  double sound_speed;
-  bool use_salinity;
-  double salinity;
+  int frequency_mode = 0;
+  int ping_rate = 0;
+  int nbeams = 0;
+  bool gain_assist = false;
+  double range = 0.0;
+  int gamma_correction = 0;
+  double gain_percent = 0.0;
+  double sound_speed = 0.0;
+  bool use_salinity = true;
+  double salinity = 0.0;
 };
 
 namespace flagByte {
@@ -210,7 +210,7 @@ void OculusSonarNode::updateRosConfigForParam(T& currentSonar_param, const T& ne
   if (currentSonar_param != new_param) {
     this->remove_on_set_parameters_callback(this->param_cb_.get());
     RCLCPP_WARN_STREAM(this->get_logger(),
-        "The parameter " << param_name << " has change by it self from " << currentSonar_param << " to " << new_param);
+        "The parameter " << param_name << " has changed by itself from " << currentSonar_param << " to " << new_param);
     currentSonar_param = new_param;
     this->set_parameter(rclcpp::Parameter(param_name, new_param));
     this->param_cb_ =
@@ -231,7 +231,7 @@ void OculusSonarNode::handleFeedbackForParam(rcl_interfaces::msg::SetParametersR
       result.reason.append("Could not update " + param_name + ".\n");
     } else {
       RCLCPP_WARN_STREAM(this->get_logger(),
-          param_name << " change from " << old_val << " to " << new_val << " when updating the parameter " << param.get_name());
+          param_name << " changed from " << old_val << " to " << new_val << " when updating the parameter " << param.get_name());
       result.reason.append(param_name + " change.\n");
     }
   }

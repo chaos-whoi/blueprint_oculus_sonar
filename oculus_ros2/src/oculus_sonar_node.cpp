@@ -101,11 +101,63 @@ OculusSonarNode::OculusSonarNode()
     }
   }
 
-  // Get current sonar config and initialize local ROS cache without sending
-  // repeated startup config requests to the sonar.
-  currentConfig_ = this->sonar_driver_->current_ping_config();
-  updateLocalParameters(currentSonarParameters_, currentConfig_);
+  // Read ROS parameters (including default.yaml overrides) and push them once
+  // to the sonar so startup state matches ROS expectations.
   updateLocalParameters(currentRosParameters_, this->get_parameters(dynamic_parameters_names_));
+
+  currentConfig_ = this->sonar_driver_->current_ping_config();
+  SonarDriver::PingConfig startup_config = currentConfig_;
+  startup_config.masterMode = currentRosParameters_.frequency_mode;
+  startup_config.pingRate = currentRosParameters_.ping_rate;
+  startup_config.range = currentRosParameters_.range;
+  startup_config.gammaCorrection = currentRosParameters_.gamma_correction;
+  startup_config.gainPercent = currentRosParameters_.gain_percent;
+  startup_config.speedOfSound = currentRosParameters_.use_salinity ? 0.0 : currentRosParameters_.sound_speed;
+  startup_config.salinity = currentRosParameters_.salinity;
+
+  if (currentRosParameters_.nbeams == 0) {
+    startup_config.flags &= ~flagByte::NBEAMS;
+  } else {
+    startup_config.flags |= flagByte::NBEAMS;
+  }
+
+  if (currentRosParameters_.gain_assist) {
+    startup_config.flags |= flagByte::GAIN_ASSIST;
+  } else {
+    startup_config.flags &= ~flagByte::GAIN_ASSIST;
+  }
+
+  setMinimalFlags(startup_config.flags);
+  currentConfig_ = this->sonar_driver_->request_ping_config(startup_config);
+  updateLocalParameters(currentSonarParameters_, currentConfig_);
+
+    RCLCPP_INFO(this->get_logger(), "Startup sonar config (requested -> confirmed):");
+    RCLCPP_INFO_STREAM(this->get_logger(),
+        "  frequency_mode: " << static_cast<int>(startup_config.masterMode) << " -> "
+                   << static_cast<int>(currentConfig_.masterMode));
+    RCLCPP_INFO_STREAM(this->get_logger(),
+        "  ping_rate: " << static_cast<int>(startup_config.pingRate) << " -> "
+                 << static_cast<int>(currentConfig_.pingRate));
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  nbeams: " << ((startup_config.flags & flagByte::NBEAMS) ? 1 : 0) << " -> "
+             << ((currentConfig_.flags & flagByte::NBEAMS) ? 1 : 0));
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  gain_assist: " << ((startup_config.flags & flagByte::GAIN_ASSIST) ? 1 : 0) << " -> "
+              << ((currentConfig_.flags & flagByte::GAIN_ASSIST) ? 1 : 0));
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  range: " << startup_config.range << " -> " << currentConfig_.range);
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  gamma_correction: " << static_cast<int>(startup_config.gammaCorrection) << " -> "
+                 << static_cast<int>(currentConfig_.gammaCorrection));
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  gain_percent: " << startup_config.gainPercent << " -> " << currentConfig_.gainPercent);
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  sound_speed: " << startup_config.speedOfSound << " -> " << currentConfig_.speedOfSound);
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  use_salinity: " << (startup_config.speedOfSound == 0.0) << " -> "
+               << (currentConfig_.speedOfSound == 0.0));
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      "  salinity: " << startup_config.salinity << " -> " << currentConfig_.salinity);
 
   this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::setConfigCallback, this,
       std::placeholders::_1));  // TODO(hugoyvrn, to move before parameters initialisation ?)
@@ -320,11 +372,9 @@ void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, SonarDr
   new_parameters.push_back(rclcpp::Parameter(params::GAMMA_CORRECTION.name, feedback.gammaCorrection));
   new_parameters.push_back(rclcpp::Parameter(params::GAIN_PERCENT.name, feedback.gainPercent));
   new_parameters.push_back(rclcpp::Parameter(params::SOUND_SPEED.name, feedback.speedOfSound));
-  //  // use_salinity  // TODO(hugoyvrn)
-  // {
-  //     rclcpp::Parameter param(params::USE_SALINITY.name, );
-  //     new_parameters.push_back(param);
-  // }
+  // Oculus protocol has no explicit use_salinity field. The sonar computes
+  // speed of sound from salinity when speedOfSound == 0.
+  // new_parameters.push_back(rclcpp::Parameter(params::USE_SALINITY.name, feedback.speedOfSound == 0.0));
 
   new_parameters.push_back(rclcpp::Parameter(params::SALINITY.name, feedback.salinity));
   updateLocalParameters(parameters, new_parameters);
