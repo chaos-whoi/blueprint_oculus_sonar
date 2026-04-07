@@ -121,9 +121,9 @@ void SonarViewer::publishFan(const int& width,
     std::copy(sonar_mat_data.ptr<uint8_t>(i) + SIZE_OF_GAIN_, sonar_mat_data.ptr<uint8_t>(i) + step,
         sonar_mat_data_without_gain.ptr<uint8_t>(i));
 
-  cv::Mat out = cv::Mat::ones(cv::Size(image_width, height), CV_MAKETYPE(mat_encoding, 1)) * std::numeric_limits<uint8_t>::max();
+  cv::Mat out = cv::Mat::zeros(cv::Size(image_width, height), CV_MAKETYPE(mat_encoding, 1));
   cv::remap(sonar_mat_data_without_gain.t(), out, source_map_1, source_map_2, cv::INTER_CUBIC, cv::BORDER_CONSTANT,
-      cv::Scalar(std::numeric_limits<uint8_t>::max(), std::numeric_limits<uint8_t>::max(), std::numeric_limits<uint8_t>::max()));
+      cv::Scalar(0, 0, 0));
 
   // Publish sonar conic image
   sensor_msgs::msg::Image msg;
